@@ -1,30 +1,83 @@
 #!/bin/bash
 set -euo pipefail
 
+# Log to stderr.
+log() {
+  printf "$@" 1>&2
+}
+
+# Return a list of all golang 1.x versions at their latest patch level.
+get_golang_versions() {
+  local versions=$(git ls-remote https://go.googlesource.com/go 'refs/tags/go1.*.*' \
+    | sed -E 's|.*refs/tags/go(1[.].+)|\1|' \
+    | grep -E '^1[.][0-9]+[.][0-9]+$' \
+    | sort -rV
+  )
+  local minors=$(sed -E 's/([0-9]+)[.]([0-9]+).*/\1.\2/' <<<"$versions" | uniq)
+
+  while read version; do
+    let major="${version%%.*}"
+    let minor="${version#*.}"
+
+    grep -m 1 "^$major[.]$minor[.]" <<<"$versions"
+  done <<<"$minors"
+}
+
+# Exit 0 if the image exits locally or we can pull it down.
+image_exists() {
+  local image=${1?Please pass in the image to check.}
+
+  if docker inspect "$image" &> /dev/null; then
+    return
+  fi
+
+  if docker pull "$image" &> /dev/null; then
+    return
+  fi
+
+  return 1
+}
+
+# Get the latest golangci version.
+golangci_version=$(curl https://api.github.com/repos/golangci/golangci-lint/releases -s \
+  | jq -r '.[].tag_name' \
+  | sort -rV \
+  | head -n 1 \
+  | sed -E 's/^v(.+)/\1/'
+)
+
 IMAGE_NAME=${1:-storjlabs/golang}
-# stolen from https://medium.com/microscaling-systems/labelling-automated-builds-on-docker-hub-f3d073fb8e1
-docker build --build-arg VCS_REF="$(git rev-parse --short HEAD)" \
-			--build-arg BUILD_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
-			-t "$IMAGE_NAME:temp" .
 
-for f in Dockerfile.*; do
-	v="${f##Dockerfile.}"
-	docker build -f "$f" \
-			--build-arg IMAGE_NAME="$IMAGE_NAME" \
-			-t "$IMAGE_NAME:$v" \
-			--target image \
-			.
-	docker tag "$IMAGE_NAME:$v" "$IMAGE_NAME:${v%.*}"
-	docker build -f "$f" \
-			--build-arg IMAGE_NAME="$IMAGE_NAME" \
-			-t "$IMAGE_NAME:$v-onbuild" \
-			--target onbuild \
-			.
-done
+vcs_ref=$(git rev-parse --short HEAD)
+build_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-docker rmi "$IMAGE_NAME:temp" || true
+# Build new images (but only the latest three minors):
+golang_versions=$( (get_golang_versions || if [[ $? == 141 ]]; then true; fi) | head -n 3)
 
-latest="$(ls Dockerfile.* | sort -r | head -n 1)"
-latest="${latest##Dockerfile.}"
+while read golang_version; do
+  if ! image_exists "storjlabs/golang:$golang_version"; then
+    log 'Building %s...\n' "$golang_version"
+
+    # stolen from https://medium.com/microscaling-systems/labelling-automated-builds-on-docker-hub-f3d073fb8e1
+    docker build --build-arg VCS_REF="$vcs_ref" \
+          --build-arg BUILD_DATE="$build_date" \
+          -t "$IMAGE_NAME:temp" .
+
+    docker build -f Dockerfile.version \
+        --build-arg IMAGE_NAME="$IMAGE_NAME" \
+        --build-arg GOLANG_VERSION="$golang_version" \
+        --build-arg GOLANGCI_VERSION="$golangci_version" \
+        -t "$IMAGE_NAME:$golang_version" \
+        --target image \
+        .
+  else
+    log 'Skipping golang %s (image already exists)...\n' "$golang_version"
+  fi
+done <<<"$golang_versions"
+
+if docker inspect "$IMAGE_NAME:temp" &> /dev/null; then
+  docker rmi "$IMAGE_NAME:temp"
+fi
+
+latest=$(head -n 1 <<<"$golang_versions")
 docker tag "$IMAGE_NAME:$latest" "$IMAGE_NAME:latest"
-docker tag "$IMAGE_NAME:$latest-onbuild" "$IMAGE_NAME:latest-onbuild"

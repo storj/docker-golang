@@ -4,8 +4,6 @@ image:
 
 .PHONY: clean
 clean:
-	-docker rmi golang-test-nocgo-onbuild
-	-docker rmi golang-test-cgo-onbuild
 	-rm -rf *.results
 
 .PHONY: test

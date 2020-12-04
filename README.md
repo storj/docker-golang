@@ -50,26 +50,6 @@ Environment Variables
 
 `VERBOSE` This makes the loader script more verbose
 
-ONBUILD
--------
-
-This image supports docker multistage builds. Simply use this as template for your Dockerfile:
-```
-ARG REPOSITORY=github.com/storjlabs/example
-FROM storjlabs/golang as builder
-
-FROM scratch
-ENV ADDRESS=
-EXPOSE 80
-ENTRYPOINT ["/repo", "serve"]
-COPY --from=builder /app /repo
-```
-
-Then build with this:
-```
-docker build -t user/repo --build-arg PACKAGE=github.com/user/repo .
-```
-
 References
 ----------
 

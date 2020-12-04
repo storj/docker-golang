@@ -1,12 +1,6 @@
 #!/bin/bash
 set -u
 
-test-onbuild(){
-	cd "test-$cgo" || exit 1
-	docker build --build-arg "IMAGE_NAME=${IMAGE_NAME}" -t "golang-test-$cgo-onbuild" . || exit 1
-	docker run --rm -i "golang-test-$cgo-onbuild" | grep '^it works$' || exit 1
-}
-
 test-tar(){
 	CGO=0
 	if [ "$cgo" == "cgo" ]; then
@@ -54,8 +48,6 @@ outputs=(
 	[windows_amd64]="PE32\\+"
 	[freebsd_amd64]="x86-64.*FreeBSD.*static.*, stripped"
 	[freebsd_386]="80386.*FreeBSD.*static.*, stripped"
-	[onbuild_386]=""
-	[onbuild_amd64]=""
 )
 
 IMAGE_NAME="${IMAGE_NAME:-storjlabs/golang:latest}"
@@ -71,25 +63,22 @@ for output in $(echo "${!outputs[@]}" | tr ' ' '\n' | sort); do
 	fi
 	IFS=_ read -r os arch <<< "$output"
 	for cgo in cgo nocgo; do
-		if [ "$os" = "onbuild" ]; then
-			o="$(test-onbuild 2>&1)"
-			ret=$?
-			sd="n/a"
-		else
-			rm -f output
-			o="$(test-tar "${outputs[$output]}" 2>&1)"
-			ret=$?
-			sd="n/a"
-			if [ $ret = 0 ]; then
-				s1="$(sha1sum "output")"
-				test-tar "${outputs[$output]}" >/dev/null 2>/dev/null
-				s2="$(sha1sum "output")"
-				sd="Non-reproducable"
-				if [ "$s1" = "$s2" ]; then
-					sd="Reproducable"
-				fi
-			fi
-		fi
+    rm -f output
+    o="$(test-tar "${outputs[$output]}" 2>&1)"
+    ret=$?
+    sd="n/a"
+    if [ $ret = 0 ]; then
+      s1="$(sha1sum "output")"
+      test-tar "${outputs[$output]}" >/dev/null 2>/dev/null
+
+      s2="$(sha1sum "output")"
+
+      sd="Non-reproducable"
+      if [ "$s1" = "$s2" ]; then
+        sd="Reproducable"
+      fi
+    fi
+
 		display-results
 	done
 done

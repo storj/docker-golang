@@ -5,7 +5,7 @@ SHELL ["/bin/bash", "-uec"]
 # Setup arm builder, windows, and OS X
 RUN dpkg --add-architecture i386 \
  && apt-get update \
- && apt install -y build-essential libssl-dev \
+ && apt-get install -y build-essential libssl-dev \
     libc6-dev-i386 libc6-dev:i386 lib32gcc-8-dev \
     gcc-8-arm-linux-gnueabi g++-8-arm-linux-gnueabi \
     gcc-8-aarch64-linux-gnu g++-8-aarch64-linux-gnu \
@@ -13,7 +13,7 @@ RUN dpkg --add-architecture i386 \
     clang \
     m4 file \
     wget git \
- && apt clean \
+ && apt-get clean \
  && rm -rf /var/lib/apt/lists
 
 # Setup musl
