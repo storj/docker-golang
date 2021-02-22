@@ -7,10 +7,11 @@ RUN dpkg --add-architecture i386 \
  && apt-get update \
  && apt install -y build-essential libssl-dev \
     libc6-dev-i386 libc6-dev:i386 lib32gcc-8-dev \
+    libxml2-dev zlib1g-dev libc++abi-dev \
     gcc-8-arm-linux-gnueabi g++-8-arm-linux-gnueabi \
     gcc-8-aarch64-linux-gnu g++-8-aarch64-linux-gnu \
     mingw-w64 \
-    clang \
+    clang cmake \
     m4 file \
     wget git \
     brotli \
@@ -46,10 +47,10 @@ ENV OSX_NDK_X86 /usr/local/osx-ndk-x86
 RUN OSX_SDK_PATH=https://s3.dockerproject.org/darwin/v2/$OSX_SDK.tar.xz \
  && wget $OSX_SDK_PATH \
  && git clone https://github.com/tpoechtrager/osxcross.git /osxcross \
- && (cd /osxcross && git checkout 9498bfdc621716959e575bd6779c853a03cf5f8d && git reset --hard ) \
+ && (cd /osxcross && git checkout 269ed97a6de0f6e82b881a2b6a05c04da3e4c4fa && git reset --hard ) \
  && mv `basename $OSX_SDK_PATH` /osxcross/tarballs/ \
- && sed -i -e 's|-march=native||g' /osxcross/build_clang.sh /osxcross/wrapper/build.sh \
- && UNATTENDED=yes OSX_VERSION_MIN=10.6 /osxcross/build.sh \
+ && sed -i -e 's|-march=native||g' /osxcross/build_clang.sh /osxcross/wrapper/build_wrapper.sh \
+ && UNATTENDED=yes OSX_VERSION_MIN=10.11 /osxcross/build.sh \
  && mv /osxcross/target $OSX_NDK_X86 \
  && rm -rf /osxcross
 
