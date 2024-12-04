@@ -1,5 +1,5 @@
 ARG IMAGE_NAME
-FROM ${IMAGE_NAME}:temp as image
+FROM ${IMAGE_NAME}:temp AS image
 
 RUN GOLANG_VERSION=1.21.13 \
     && DIGEST='502fc16d5910562461e6a6631fb6377de2322aad7304bf2bcd23500ba9dab4a7' \
@@ -10,7 +10,7 @@ RUN GOLANG_VERSION=1.21.13 \
     && echo PATH: $PATH \
     && go version
 
-FROM image as onbuild
+FROM image AS onbuild
 
 ONBUILD ARG GOARCH
 ONBUILD ENV GOARCH=$GOARCH
