@@ -8,6 +8,9 @@ RUN GOLANG_VERSION=1.23.8 \
     &&	tar -C /usr/local -xzf go.tgz \
     && rm go.tgz \
     && echo PATH: $PATH \
+    && RUN /bin/bash -uec rm -rf /tmp/.cache \
+    && RUN /bin/bash -uec rm -rf /tmp/.config \
+    && RUN /bin/bash -uec rm -rf /tmp/.wget-hsts \
     && go version
 
 FROM image AS onbuild
