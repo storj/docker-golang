@@ -1,4 +1,4 @@
-FROM debian:buster
+FROM debian:trixie
 
 SHELL ["/bin/bash", "-uec"]
 
@@ -6,9 +6,9 @@ SHELL ["/bin/bash", "-uec"]
 RUN dpkg --add-architecture i386 \
  && apt-get update \
  && apt install -y build-essential libssl-dev \
-    libc6-dev-i386 libc6-dev:i386 lib32gcc-8-dev \
-    gcc-8-arm-linux-gnueabi g++-8-arm-linux-gnueabi \
-    gcc-8-aarch64-linux-gnu g++-8-aarch64-linux-gnu \
+    libc6-dev-i386 libc6-dev:i386 lib32gcc-14-dev \
+    gcc-14-arm-linux-gnueabi g++-14-arm-linux-gnueabi \
+    gcc-14-aarch64-linux-gnu g++-14-aarch64-linux-gnu \
     mingw-w64 \
     clang \
     m4 file \
@@ -18,21 +18,21 @@ RUN dpkg --add-architecture i386 \
  && rm -rf /var/lib/apt/lists
 
 # Setup musl
-RUN wget https://www.musl-libc.org/releases/musl-1.2.3.tar.gz \
- && echo "7d5b0b6062521e4627e099e4c9dc8248d32a30285e959b7eecaa780cf8cfd4a4 musl-1.2.3.tar.gz" | sha256sum -c - \
- && tar -zxvf musl-1.2.3.tar.gz \
- && rm musl-1.2.3.tar.gz \
+RUN wget https://musl.libc.org/releases/musl-1.2.5.tar.gz \
+ && echo "a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4 musl-1.2.5.tar.gz" | sha256sum -c - \
+ && tar -zxvf musl-1.2.5.tar.gz \
+ && rm musl-1.2.5.tar.gz \
  && cd musl* \
  && ./configure --prefix=/usr/local/musl-x86_64 -exec-prefix=/usr/local/musl-x86_64 \
  && make -j$(nproc) \
  && make install \
  && make clean \
- && export CC=arm-linux-gnueabi-gcc-8 \
+ && export CC=arm-linux-gnueabi-gcc-14 \
  && ./configure --prefix=/usr/local/musl-arm -exec-prefix=/usr/local/musl-arm \
  && make -j$(nproc) \
  && make install \
  && make clean \
- && export CC=aarch64-linux-gnu-gcc-8 \
+ && export CC=aarch64-linux-gnu-gcc-14 \
  && ./configure --prefix=/usr/local/musl-aarch64 -exec-prefix=/usr/local/musl-aarch64 \
  && make -j$(nproc) \
  && make install \
@@ -128,21 +128,23 @@ RUN wget https://ftp.gnu.org/gnu/gcc/gcc-8.1.0/gcc-8.1.0.tar.gz \
  && rm -rf gcc*
 
 ENV CC=/bin/cc \
-	CGO_ENABLED=1 \
-	CXX=/bin/c++ \
-	GOPATH=/go \
-	HOME=/tmp \
-	PATH=/sbin:/bin:/usr/sbin:/usr/bin:/freebsd/bin:/usr/local/go/bin:/go/bin \
-    GOOS="linux" \
-    LDFLAGS="" \
-	TAR="" \
-    VERBOSE=""
+   CGO_ENABLED=1 \
+   CXX=/bin/c++ \
+   GOPATH=/go \
+   HOME=/tmp \
+   PATH=/sbin:/bin:/usr/sbin:/usr/bin:/freebsd/bin:/usr/local/go/bin:/go/bin \
+   GOOS="linux" \
+   LDFLAGS="" \
+   TAR="" \
+   VERBOSE=""
 
 COPY loader /loader
 
 COPY cc /bin/cc
 
-RUN ln -s /bin/cc /bin/c++ \
+
+RUN rm /bin/c++ \
+ && ln -s /bin/cc /bin/c++ \
  && ln -s /bin/cc /bin/go \
  && mkdir -p "$GOPATH/src" "$GOPATH/bin" \
  && chmod -R 777 "$GOPATH"
