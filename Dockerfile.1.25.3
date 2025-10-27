@@ -1,16 +1,16 @@
-ARG IMAGE_NAME
+ARG IMAGE_NAME=storjlabs/golang
 FROM ${IMAGE_NAME}:temp AS image
 
-RUN GOLANG_VERSION=1.20.14 \
-    && DIGEST='ff445e48af27f93f66bd949ae060d97991c83e11289009d311f25426258f9c44' \
+RUN GOLANG_VERSION=1.25.0 \
+    && DIGEST='0335f314b6e7bfe08c3d0cfaa7c19db961b7b99fb20be62b0a826c992ad14e0f' \
     && wget -O go.tgz "https://golang.org/dl/go${GOLANG_VERSION}.linux-amd64.tar.gz" \
     && echo "${DIGEST} *go.tgz" | sha256sum -c - \
     &&	tar -C /usr/local -xzf go.tgz \
     && rm go.tgz \
     && echo PATH: $PATH \
-    && RUN /bin/bash -uec rm -rf /tmp/.cache \
-    && RUN /bin/bash -uec rm -rf /tmp/.config \
-    && RUN /bin/bash -uec rm -rf /tmp/.wget-hsts \
+    && rm -rf /tmp/.cache \
+    && rm -rf /tmp/.config \
+    && rm -rf /tmp/.wget-hsts \
     && go version
 
 FROM image AS onbuild

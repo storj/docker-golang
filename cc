@@ -96,7 +96,7 @@ js-wasm-go)
 	exec /usr/local/go/bin/go "$@"
 ;;
 *)
-	echo "There is not compiler for GOOS=${GOOS} GOARCH=${GOARCH} in the cc file!" >&2
+	echo "There is not compiler for GOOS=${GOOS} GOARCH=${GOARCH} basename=$(basename "$0") in the cc file!" >&2
 	exit 1
 ;;
 esac
